@@ -31,14 +31,10 @@ A metodologia central deste projeto baseia-se na adaptação da Transferência d
 - `docs/`: Documentação adicional
 - `paper/`: Materiais relacionados à publicação acadêmica
 
-## Requisitos e Instalação
+## Status do Projeto
 
-Para replicar o ambiente de análise:
+**Fase atual**: Configuração inicial e coleta de dados
 
-```bash
-# Usando conda
-conda env create -f environment.yml
-conda activate atlantic-nodules
+## Contato
 
-# Ou usando pip
-pip install -r requirements.txt
+Guilherme França - franca.guilherme@outlook.pt
