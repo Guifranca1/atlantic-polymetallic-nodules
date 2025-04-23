@@ -1,0 +1,40 @@
+# Dados
+data/raw/
+data/processed/
+*.csv
+*.xlsx
+*.db
+*.sqlite
+
+# Ambiente Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.ipynb_checkpoints
+
+# Resultados e figuras temporárias
+results/figures/temp/
+results/tables/temp/
+
+# Arquivos de configuração específicos
+.DS_Store
+.idea/
+.vscode/
+
+# Arquivos grandes
+*.hdf5
+*.pickle
+*.joblib
+
+# Credenciais
+*.key
+*.pem
+config.ini
+secrets.json
