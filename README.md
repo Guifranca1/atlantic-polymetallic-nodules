@@ -35,6 +35,34 @@ A metodologia central deste projeto baseia-se na adaptação da Transferência d
 
 **Fase atual**: Configuração inicial e coleta de dados
 
+## Status do Projeto
+
+### Concluído:
+- ✅ Configuração inicial do repositório e ambiente de desenvolvimento
+- ✅ Implementação do módulo LETE para análise de transferência de informação
+- ✅ Scripts para coleta de dados simulados
+- ✅ Implementação da otimização de portfólio baseada em LETE
+- ✅ Notebooks de demonstração para análise de redes complexas e otimização
+
+### Em andamento:
+- 🔄 Coleta de dados reais sobre nódulos polimetálicos no Atlântico
+- 🔄 Análise de impactos de preço usando modelos ARIMA, VAR e LSTM
+
+### Próximas etapas:
+- ⏭️ Integração de dados geoespaciais para otimização de rotas logísticas
+- ⏭️ Implementação de análise de sensibilidade mais abrangente
+- ⏭️ Modelagem de impactos ambientais e regulatórios
+
+## Primeiros Resultados
+
+Os testes iniciais usando dados simulados demonstraram que:
+
+1. A metodologia LETE permite identificar de forma robusta relações causais entre variáveis econômicas e geológicas, mesmo em condições de alta volatilidade
+2. A otimização de portfólio baseada em LETE oferece uma alternativa mais robusta à abordagem tradicional de Markowitz para seleção de portfólios
+3. A viabilidade econômica da exploração é significativamente influenciada pelas variações nos preços dos metais, com diferentes locais apresentando sensibilidades distintas
+
+Estes resultados preliminares fornecem uma base sólida para aplicação a dados reais e desenvolvimento de um modelo mais completo para avaliação de viabilidade econômica.
+
 ## Contato
 
 Guilherme França - franca.guilherme@outlook.pt
