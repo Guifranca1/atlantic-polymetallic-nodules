@@ -28,12 +28,12 @@ CREATE TABLE nodule_samples (
     -- Metadata
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Metal Prices Table
 CREATE TABLE metal_prices (
-    price_id INT AUTO_INCREMENT PRIMARY KEY,
+    price_id INTEGER PRIMARY KEY AUTOINCREMENT,
     metal_name VARCHAR(50) NOT NULL,
     date DATE NOT NULL,
     price_usd_ton DECIMAL(10,2) NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE metal_prices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Constraints
-    UNIQUE KEY (metal_name, date)
+    UNIQUE(metal_name, date)
 );
 
 -- Ports Table
@@ -61,7 +61,7 @@ CREATE TABLE ports (
     
     -- Metadata
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Exploration Contracts Table
@@ -77,12 +77,12 @@ CREATE TABLE exploration_contracts (
     
     -- Metadata
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Ocean Conditions Table
 CREATE TABLE ocean_conditions (
-    condition_id INT AUTO_INCREMENT PRIMARY KEY,
+    condition_id INTEGER PRIMARY KEY AUTOINCREMENT,
     latitude DECIMAL(10,6) NOT NULL,
     longitude DECIMAL(10,6) NOT NULL,
     date DATE NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE ocean_conditions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Constraints
-    UNIQUE KEY (latitude, longitude, date)
+    UNIQUE(latitude, longitude, date)
 );
 
 -- Create indices for efficient queries
