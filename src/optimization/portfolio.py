@@ -379,3 +379,5 @@ class MiningPortfolioOptimizer:
         ax.legend(scatterpoints=1, frameon=True, labelspacing=1, title='Pesos do Portfólio')
         
         return ax
+    
+    

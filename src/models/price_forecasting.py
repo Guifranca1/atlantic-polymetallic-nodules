@@ -1,18 +1,4 @@
-"""
-Módulo para previsão de preços de metais utilizando modelos ARIMA, VAR e LSTM.
-
-Este módulo implementa três abordagens diferentes para modelagem de séries temporais
-de preços de metais relevantes para nódulos polimetálicos:
-
-1. ARIMA: Modelo univariado para cada metal individualmente
-2. VAR: Modelo multivariado que captura relações entre diferentes metais
-3. LSTM: Rede neural recorrente para capturar padrões complexos e não-lineares
-
-Nota: Esta versão foi modificada para funcionar sem a dependência do 'pmdarima'.
-Em vez disso, implementa uma função própria de busca de parâmetros ARIMA.
-Também inclui tratamento de erros para importações que podem não estar disponíveis
-em todas as versões do statsmodels.
-"""
+# src/models/price_forecasting.py
 
 import os
 import numpy as np
@@ -167,7 +153,35 @@ class MetalPriceForecaster:
         
         self.data = df_wide
         return df_wide
-    
+
+    def split_data(self, data=None, train_size=0.8):
+        """
+        Divide os dados em conjuntos de treino e teste.
+        
+        Parâmetros:
+        -----------
+        data : DataFrame
+            DataFrame com os dados. Se None, usa self.data
+        train_size : float
+            Proporção dos dados para treino (0-1)
+            
+        Retorna:
+        --------
+        tuple
+            Conjuntos de treino e teste (train_data, test_data)
+        """
+        if data is None:
+            if not hasattr(self, 'data'):
+                raise ValueError("Dados não carregados. Execute load_data() primeiro.")
+            data = self.data
+        
+        # Dividir dados
+        train_size = int(len(data) * train_size)
+        train_data = data.iloc[:train_size]
+        test_data = data.iloc[train_size:]
+        
+        return train_data, test_data
+        
     def exploratory_analysis(self):
         """
         Realiza análise exploratória das séries temporais.
@@ -535,62 +549,295 @@ class MetalPriceForecaster:
             'upper_ci': conf_int.iloc[:, 1]
         }
     
-    def train_var(self, lag_order=None, max_lags=12):
-        """
-        Treina modelo VAR para todos os metais juntos.
+def compare_models(self, metal, periods=12, train_size=0.8, arima_forecast=None, var_forecast=None, lstm_forecast=None):
+    """
+    Compara o desempenho de diferentes modelos de previsão.
+    
+    Parâmetros:
+    -----------
+    metal : str
+        Nome do metal para comparação
+    periods : int
+        Número de períodos para previsão
+    train_size : float
+        Proporção dos dados usada para treinamento
+    arima_forecast : dict, optional
+        Resultados da previsão ARIMA, se já calculados
+    var_forecast : pandas.DataFrame, optional
+        Resultados da previsão VAR, se já calculados
+    lstm_forecast : pandas.Series, optional
+        Resultados da previsão LSTM, se já calculados
         
-        Parâmetros:
-        -----------
-        lag_order : int
-            Ordem de defasagem do modelo VAR
-        max_lags : int
-            Número máximo de defasagens a considerar se lag_order=None
+    Retorna:
+    --------
+    dict
+        Resultados da comparação
+    """
+    print(f"Comparando modelos para {metal}...")
+    
+    # Resultados da comparação
+    comparison = {
+        'metal': metal,
+        'metrics': {}
+    }
+    
+    # Verificar se temos dados suficientes para testar
+    if not hasattr(self, 'data') or len(self.data) < 2*periods:
+        print("Aviso: Dados insuficientes para avaliação completa do modelo.")
+        return comparison
+    
+    # Dividir dados em treino e teste para avaliação
+    train_size_idx = int(len(self.data) * train_size)
+    train_data = self.data.iloc[:train_size_idx]
+    test_data = self.data.iloc[train_size_idx:train_size_idx+periods]
+    
+    if len(test_data) == 0:
+        print("Aviso: Não há dados de teste disponíveis para avaliação.")
+        return comparison
+    
+    # Obter previsões se não fornecidas
+    if arima_forecast is None and f'ARIMA_{metal}' in self.models:
+        try:
+            arima_forecast = self.forecast_arima(metal, periods=len(test_data))
+        except Exception as e:
+            print(f"Erro ao obter previsão ARIMA: {e}")
+    
+    if var_forecast is None and 'VAR' in self.models:
+        try:
+            var_forecast = self.forecast_var(periods=len(test_data))
+        except Exception as e:
+            print(f"Erro ao obter previsão VAR: {e}")
+    
+    if lstm_forecast is None and f'LSTM_{metal}' in self.models:
+        try:
+            lstm_forecast = self.forecast_lstm(metal, periods=len(test_data))
+        except Exception as e:
+            print(f"Erro ao obter previsão LSTM: {e}")
+    
+    # Valores reais para comparação
+    actual_values = test_data[metal].values
+    
+    # Calcular métricas para cada modelo
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
+    
+    # ARIMA
+    if arima_forecast is not None and 'forecast' in arima_forecast:
+        # Ajustar índices para corresponder ao período de teste
+        arima_values = arima_forecast['forecast'].values[:len(actual_values)]
+        if len(arima_values) > 0:
+            mse = mean_squared_error(actual_values, arima_values)
+            rmse = np.sqrt(mse)
+            mae = mean_absolute_error(actual_values, arima_values)
             
-        Retorna:
-        --------
-        dict
-            Resultados do modelo VAR
-        """
-        if not hasattr(self, 'data'):
-            raise ValueError("Dados não carregados. Execute load_data() primeiro.")
+            comparison['metrics']['ARIMA'] = {
+                'MSE': mse,
+                'RMSE': rmse,
+                'MAE': mae
+            }
+    
+    # VAR
+    if var_forecast is not None and metal in var_forecast.columns:
+        var_values = var_forecast[metal].values[:len(actual_values)]
+        if len(var_values) > 0:
+            mse = mean_squared_error(actual_values, var_values)
+            rmse = np.sqrt(mse)
+            mae = mean_absolute_error(actual_values, var_values)
+            
+            comparison['metrics']['VAR'] = {
+                'MSE': mse,
+                'RMSE': rmse,
+                'MAE': mae
+            }
+    
+    # LSTM
+    if lstm_forecast is not None:
+        lstm_values = lstm_forecast.values[:len(actual_values)]
+        if len(lstm_values) > 0:
+            mse = mean_squared_error(actual_values, lstm_values)
+            rmse = np.sqrt(mse)
+            mae = mean_absolute_error(actual_values, lstm_values)
+            
+            comparison['metrics']['LSTM'] = {
+                'MSE': mse,
+                'RMSE': rmse,
+                'MAE': mae
+            }
+    
+    # Determinar o melhor modelo
+    if comparison['metrics']:
+        best_model = min(comparison['metrics'].items(), 
+                        key=lambda x: x[1]['RMSE'])[0]
+        comparison['best_model'] = best_model
+        print(f"Melhor modelo para {metal}: {best_model}")
+    
+    # Visualizar comparação
+    if comparison['metrics']:
+        self._plot_model_comparison(metal, actual_values, 
+                                   arima_forecast, 
+                                   var_forecast, 
+                                   lstm_forecast,
+                                   comparison)
+    
+    return comparison
+
+def _plot_model_comparison(self, metal, actual_values, arima_forecast=None, var_forecast=None, lstm_forecast=None, comparison=None):
+    """
+    Plota comparação visual entre os modelos.
+    
+    Parâmetros:
+    -----------
+    metal : str
+        Nome do metal para visualização
+    actual_values : array-like
+        Valores reais para comparação
+    arima_forecast : dict
+        Resultados da previsão ARIMA
+    var_forecast : DataFrame
+        Resultados da previsão VAR
+    lstm_forecast : Series
+        Resultados da previsão LSTM
+    comparison : dict
+        Resultados da comparação de métricas
+    """
+    # Criar figura
+    plt.figure(figsize=(12, 8))
+    
+    # Plotar valores reais
+    plt.plot(range(len(actual_values)), actual_values, 'k-', marker='o', 
+            label='Valores Reais', linewidth=2)
+    
+    # Plotar previsões ARIMA
+    if arima_forecast is not None and 'forecast' in arima_forecast:
+        arima_values = arima_forecast['forecast'].values[:len(actual_values)]
+        if len(arima_values) > 0:
+            plt.plot(range(len(arima_values)), arima_values, 'b-', 
+                    marker='s', label='ARIMA', linewidth=1.5)
+    
+    # Plotar previsões VAR
+    if var_forecast is not None and metal in var_forecast.columns:
+        var_values = var_forecast[metal].values[:len(actual_values)]
+        if len(var_values) > 0:
+            plt.plot(range(len(var_values)), var_values, 'g-', 
+                    marker='^', label='VAR', linewidth=1.5)
+    
+    # Plotar previsões LSTM
+    if lstm_forecast is not None:
+        lstm_values = lstm_forecast.values[:len(actual_values)]
+        if len(lstm_values) > 0:
+            plt.plot(range(len(lstm_values)), lstm_values, 'r-', 
+                    marker='d', label='LSTM', linewidth=1.5)
+    
+    # Adicionar informações de métricas na legenda, se disponíveis
+    if comparison and 'metrics' in comparison:
+        handles, labels = plt.gca().get_legend_handles_labels()
+        new_labels = []
         
-        print("Treinando modelo VAR para todos os metais...")
+        for label in labels:
+            if label == 'Valores Reais':
+                new_labels.append(label)
+            elif label in comparison['metrics']:
+                metrics = comparison['metrics'][label]
+                new_label = f"{label} (RMSE: {metrics['RMSE']:.2f})"
+                new_labels.append(new_label)
+            else:
+                new_labels.append(label)
         
-        # Dados para treino
-        train_data = self.data.dropna()
+        plt.legend(handles, new_labels)
+    else:
+        plt.legend()
+    
+    # Adicionar rótulos
+    plt.title(f'Comparação de Modelos de Previsão para {metal}')
+    plt.xlabel('Período de Previsão')
+    plt.ylabel('Preço (USD/ton)')
+    plt.grid(True, alpha=0.3)
+    
+    # Adicionar indicação do melhor modelo, se disponível
+    if comparison and 'best_model' in comparison:
+        best_model = comparison['best_model']
+        plt.annotate(f'Melhor Modelo: {best_model}', 
+                   xy=(0.02, 0.02), 
+                   xycoords='axes fraction',
+                   fontsize=12,
+                   bbox=dict(boxstyle="round,pad=0.3", fc="yellow", alpha=0.3))
+    
+    # Salvar figura
+    plt.tight_layout()
+    plt.savefig(os.path.join(self.results_dir, f'model_comparison_{metal}.png'))
+    plt.close()
+    
+def train_var(self, lag_order=None, max_lags=12):
+    """
+    Treina modelo VAR para todos os metais juntos.
+    
+    Parâmetros:
+    -----------
+    lag_order : int
+        Ordem de defasagem do modelo VAR
+    max_lags : int
+        Número máximo de defasagens a considerar se lag_order=None
         
-        # Determinar ordem de defasagem ideal
-        if lag_order is None:
-            # Verificar estacionaridade
-            adf_results = {}
-            differenced_data = pd.DataFrame()
+    Retorna:
+    --------
+    dict
+        Resultados do modelo VAR
+    """
+    # Indentação corrigida - adicione um pass temporário ou o código real da função
+    if not hasattr(self, 'data'):
+        raise ValueError("Dados não carregados. Execute load_data() primeiro.")
+    
+    print("Treinando modelo VAR para todos os metais...")
+    
+    # Dados para treino
+    train_data = self.data.dropna()
+    
+    # Ajustar max_lags automaticamente com base no tamanho dos dados
+    n_obs = len(train_data)
+    n_vars = train_data.shape[1]
+    # Fórmula ajustada: garantindo que max_lags não ultrapasse (n_obs - n_vars - 1) / n_vars
+    max_allowed_lags = max(1, int((n_obs - n_vars - 1) / n_vars) - 1)
+    
+    # Limitar max_lags ao valor permitido
+    max_lags = min(max_lags, max_allowed_lags)
+    
+    print(f"Usando max_lags={max_lags} com base no tamanho do conjunto de dados.")
+    
+    # Determinar ordem de defasagem ideal
+    if lag_order is None:
+        # Verificar estacionaridade
+        adf_results = {}
+        differenced_data = pd.DataFrame()
+        
+        for metal in train_data.columns:
+            # Teste ADF
+            adf_test = adfuller(train_data[metal])
+            adf_results[metal] = {
+                'p_value': adf_test[1],
+                'stationary': adf_test[1] < 0.05
+            }
             
-            for metal in train_data.columns:
-                # Teste ADF
-                adf_test = adfuller(train_data[metal])
-                adf_results[metal] = {
-                    'p_value': adf_test[1],
-                    'stationary': adf_test[1] < 0.05
-                }
-                
-                # Se não estacionário, diferenciar
-                if adf_test[1] >= 0.05:
-                    differenced_data[metal] = train_data[metal].diff().dropna()
-                else:
-                    differenced_data[metal] = train_data[metal]
-            
-            # Remover primeira linha após diferenciação
-            if len(differenced_data) < len(train_data):
-                train_data = train_data.iloc[1:]
-            
-            # Selecionar ordem de defasagem ideal
-            model = VAR(train_data)
+            # Se não estacionário, diferenciar
+            if adf_test[1] >= 0.05:
+                differenced_data[metal] = train_data[metal].diff().dropna()
+            else:
+                differenced_data[metal] = train_data[metal]
+        
+        # Remover primeira linha após diferenciação
+        if len(differenced_data) < len(train_data):
+            train_data = train_data.iloc[1:]
+        
+        # Selecionar ordem de defasagem ideal
+        model = VAR(train_data)
+        try:
             lag_results = model.select_order(maxlags=max_lags)
             best_lag = lag_results.aic
-            
-            print(f"Melhor ordem de defasagem (AIC): {best_lag}")
-        else:
-            best_lag = lag_order
+        except Exception as e:
+            print(f"Erro ao selecionar ordem de defasagem: {e}")
+            best_lag = 1  # Valor padrão seguro
+        
+        print(f"Melhor ordem de defasagem (AIC): {best_lag}")
+    else:
+        best_lag = lag_order
         
         # Treinar modelo VAR
         model = VAR(train_data)
@@ -742,6 +989,141 @@ class MetalPriceForecaster:
         
         return forecast_df
     
+    def train_lstm(self, metal, lookback=12, epochs=100, batch_size=32, validation_split=0.2):
+        """
+        Treina modelo LSTM para um metal específico.
+        
+        Parâmetros:
+        -----------
+        metal : str
+            Nome do metal para modelar
+        lookback : int
+            Número de passos de tempo anteriores para considerar
+        epochs : int
+            Número de épocas de treinamento
+        batch_size : int
+            Tamanho do lote para treinamento
+        validation_split : float
+            Fração dos dados para validação
+            
+        Retorna:
+        --------
+        dict
+            Resultados do modelo LSTM
+        """
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow não está disponível. O modelo LSTM não pode ser treinado.")
+            
+        if not hasattr(self, 'data'):
+            raise ValueError("Dados não carregados. Execute load_data() primeiro.")
+            
+        if metal not in self.data.columns:
+            raise ValueError(f"Metal {metal} não encontrado nos dados.")
+        
+        print(f"Treinando modelo LSTM para {metal}...")
+        
+        # Dados para treino
+        train_data = self.data[metal].dropna().values.reshape(-1, 1)
+        
+        # Normalizar dados
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_data = scaler.fit_transform(train_data)
+        
+        # Preparar dados para LSTM
+        X, y = [], []
+        
+        for i in range(len(scaled_data) - lookback):
+            X.append(scaled_data[i:i+lookback, 0])
+            y.append(scaled_data[i+lookback, 0])
+            
+        X, y = np.array(X), np.array(y)
+        
+        # Remodelar para [amostras, passos de tempo, características]
+        X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+        
+        # Dividir em conjuntos de treino e validação
+        train_size = int(len(X) * (1 - validation_split))
+        X_train, X_val = X[:train_size], X[train_size:]
+        y_train, y_val = y[:train_size], y[train_size:]
+        
+        # Construir modelo LSTM
+        model = Sequential()
+        
+        # Primeira camada LSTM com retorno de sequências
+        model.add(KERAS_LSTM(units=50, return_sequences=True, input_shape=(X.shape[1], 1)))
+        model.add(Dropout(0.2))
+        
+        # Segunda camada LSTM sem retorno de sequências
+        model.add(KERAS_LSTM(units=50))
+        model.add(Dropout(0.2))
+        
+        # Camada densa intermediária
+        model.add(Dense(units=25))
+        
+        # Camada de saída
+        model.add(Dense(units=1))
+        
+        # Compilar modelo
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        
+        # Early stopping
+        early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        
+        # Treinar modelo
+        history = model.fit(
+            X_train, y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(X_val, y_val),
+            callbacks=[early_stop],
+            verbose=1
+        )
+        
+        # Salvar modelo e scaler
+        self.models[f'LSTM_{metal}'] = {
+            'model': model,
+            'scaler': scaler,
+            'lookback': lookback,
+            'history': history.history
+        }
+        
+        # Visualizar histórico de treinamento
+        plt.figure(figsize=(10, 6))
+        plt.plot(history.history['loss'], label='Treino')
+        plt.plot(history.history['val_loss'], label='Validação')
+        plt.title(f'Histórico de Treinamento LSTM para {metal}')
+        plt.xlabel('Época')
+        plt.ylabel('Perda (MSE)')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.results_dir, f'lstm_history_{metal}.png'))
+        plt.close()
+        
+        # Avaliar modelo
+        train_predict = model.predict(X_train)
+        val_predict = model.predict(X_val)
+        
+        # Desnormalizar previsões
+        train_predict = scaler.inverse_transform(train_predict)
+        val_predict = scaler.inverse_transform(val_predict)
+        y_train_inv = scaler.inverse_transform(y_train.reshape(-1, 1))
+        y_val_inv = scaler.inverse_transform(y_val.reshape(-1, 1))
+        
+        # Métricas de avaliação
+        train_rmse = np.sqrt(np.mean((train_predict - y_train_inv) ** 2))
+        val_rmse = np.sqrt(np.mean((val_predict - y_val_inv) ** 2))
+        
+        print(f"RMSE Treino: {train_rmse:.2f}")
+        print(f"RMSE Validação: {val_rmse:.2f}")
+        
+        return {
+            'model': model,
+            'train_rmse': train_rmse,
+            'val_rmse': val_rmse,
+            'history': history.history
+        }
+    
     def forecast_lstm(self, metal, periods=12):
         """
         Realiza previsão com modelo LSTM treinado.
@@ -821,132 +1203,158 @@ class MetalPriceForecaster:
         
         return forecast_series
     
-    def train_lstm(self, metal, lookback=12, epochs=100, batch_size=32, validation_split=0.2):
+    def compare_models(self, metal, periods=12, train_size=0.8, plot=True):
         """
-        Treina modelo LSTM para um metal específico.
+        Compara os três modelos de previsão para um metal específico.
         
         Parâmetros:
         -----------
         metal : str
-            Nome do metal para modelar
-        lookback : int
-            Número de passos de tempo anteriores para considerar
-        epochs : int
-            Número de épocas de treinamento
-        batch_size : int
-            Tamanho do lote para treinamento
-        validation_split : float
-            Fração dos dados para validação
+            Nome do metal para comparar modelos
+        periods : int
+            Número de períodos para prever
+        train_size : float
+            Proporção dos dados para treino
+        plot : bool
+            Se True, gera visualização da comparação
             
         Retorna:
         --------
         dict
-            Resultados do modelo LSTM
+            Resultados da comparação
         """
-        if not TENSORFLOW_AVAILABLE:
-            raise ImportError("TensorFlow não está disponível. O modelo LSTM não pode ser treinado.")
-            
         if not hasattr(self, 'data'):
             raise ValueError("Dados não carregados. Execute load_data() primeiro.")
             
         if metal not in self.data.columns:
             raise ValueError(f"Metal {metal} não encontrado nos dados.")
         
-        print(f"Treinando modelo LSTM para {metal}...")
+        # Dividir dados em treino e teste
+        train_data, test_data = self.split_data(self.data[metal].to_frame(), train_size)
         
-        # Dados para treino
-        train_data = self.data[metal].dropna().values.reshape(-1, 1)
+        # Treinar modelos se ainda não foram treinados
+        # ARIMA
+        if f'ARIMA_{metal}' not in self.models:
+            self.train_arima(metal, auto=True)
         
-        # Normalizar dados
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        scaled_data = scaler.fit_transform(train_data)
+        # VAR (se for o primeiro metal)
+        if 'VAR' not in self.models:
+            self.train_var()
         
-        # Preparar dados para LSTM
-        X, y = [], []
+        # LSTM
+        if f'LSTM_{metal}' not in self.models and TENSORFLOW_AVAILABLE:
+            try:
+                self.train_lstm(metal)
+            except Exception as e:
+                print(f"Erro ao treinar modelo LSTM: {e}")
         
-        for i in range(len(scaled_data) - lookback):
-            X.append(scaled_data[i:i+lookback, 0])
-            y.append(scaled_data[i+lookback, 0])
+        # Realizar previsões
+        # ARIMA
+        arima_forecast = self.forecast_arima(metal, periods)
+        
+        # VAR
+        var_forecast = self.forecast_var(periods)
+        
+        # LSTM
+        if TENSORFLOW_AVAILABLE and f'LSTM_{metal}' in self.models:
+            lstm_forecast = self.forecast_lstm(metal, periods)
+        else:
+            lstm_forecast = None
+        
+        # Comparar com dados de teste (se houver períodos suficientes)
+        results = {}
+        metrics = {}
+        
+        if len(test_data) >= periods:
+            # Calcular métricas para ARIMA
+            arima_actual = test_data[metal].iloc[:periods]
+            arima_pred = arima_forecast['forecast']
             
-        X, y = np.array(X), np.array(y)
+            arima_mse = np.mean((arima_actual - arima_pred) ** 2)
+            arima_rmse = np.sqrt(arima_mse)
+            arima_mae = np.mean(np.abs(arima_actual - arima_pred))
+            
+            metrics['ARIMA'] = {
+                'MSE': arima_mse,
+                'RMSE': arima_rmse,
+                'MAE': arima_mae
+            }
+            
+            # Calcular métricas para VAR
+            var_actual = test_data[metal].iloc[:periods]
+            var_pred = var_forecast[metal]
+            
+            var_mse = np.mean((var_actual - var_pred) ** 2)
+            var_rmse = np.sqrt(var_mse)
+            var_mae = np.mean(np.abs(var_actual - var_pred))
+            
+            metrics['VAR'] = {
+                'MSE': var_mse,
+                'RMSE': var_rmse,
+                'MAE': var_mae
+            }
+            
+            # Calcular métricas para LSTM
+            if lstm_forecast is not None:
+                lstm_actual = test_data[metal].iloc[:periods]
+                lstm_pred = lstm_forecast
+                
+                lstm_mse = np.mean((lstm_actual - lstm_pred) ** 2)
+                lstm_rmse = np.sqrt(lstm_mse)
+                lstm_mae = np.mean(np.abs(lstm_actual - lstm_pred))
+                
+                metrics['LSTM'] = {
+                    'MSE': lstm_mse,
+                    'RMSE': lstm_rmse,
+                    'MAE': lstm_mae
+                }
         
-        # Remodelar para [amostras, passos de tempo, características]
-        X = np.reshape(X, (X.shape[0], X.shape[1], 1))
-        
-        # Dividir em conjuntos de treino e validação
-        train_size = int(len(X) * (1 - validation_split))
-        X_train, X_val = X[:train_size], X[train_size:]
-        y_train, y_val = y[:train_size], y[train_size:]
-        
-        # Construir modelo LSTM
-        model = Sequential()
-        
-        model.add(KERAS_LSTM(units=50, return_sequences=True, input_shape=(X.shape[1], 1)))
-        model.add(Dropout(0.2))
-        
-        model.add(KERAS_LSTM(units=50, return_sequences=False))
-        model.add(Dropout(0.2))
-        
-        model.add(Dense(units=25))
-        model.add(Dense(units=1))
-        
-        # Compilar modelo
-        model.compile(optimizer='adam', loss='mean_squared_error')
-        
-        # Early stopping
-        early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-        
-        # Treinar modelo
-        history = model.fit(
-            X_train, y_train,
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_data=(X_val, y_val),
-            callbacks=[early_stop],
-            verbose=1
-        )
-        
-        # Salvar modelo e scaler
-        self.models[f'LSTM_{metal}'] = {
-            'model': model,
-            'scaler': scaler,
-            'lookback': lookback,
-            'history': history.history
+        # Armazenar previsões
+        forecasts = {
+            'ARIMA': arima_forecast['forecast'],
+            'VAR': var_forecast[metal],
+            'LSTM': lstm_forecast
         }
         
-        # Visualizar histórico de treinamento
-        plt.figure(figsize=(10, 6))
-        plt.plot(history.history['loss'], label='Treino')
-        plt.plot(history.history['val_loss'], label='Validação')
-        plt.title(f'Histórico de Treinamento LSTM para {metal}')
-        plt.xlabel('Época')
-        plt.ylabel('Perda (MSE)')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.results_dir, f'lstm_history_{metal}.png'))
-        plt.close()
+        # Visualizar comparação
+        if plot:
+            plt.figure(figsize=(14, 8))
+            
+            # Plotar dados históricos
+            plt.plot(self.data.index, self.data[metal], label='Histórico', color='black')
+            
+            # Plotar previsões
+            plt.plot(arima_forecast['forecast'].index, arima_forecast['forecast'], 
+                    label='ARIMA', color='blue')
+            
+            plt.plot(var_forecast.index, var_forecast[metal], 
+                    label='VAR', color='green')
+            
+            if lstm_forecast is not None:
+                plt.plot(lstm_forecast.index, lstm_forecast, 
+                        label='LSTM', color='red')
+            
+            # Plotar dados de teste (se houver)
+            if len(test_data) >= periods:
+                plt.plot(test_data.index[:periods], test_data[metal].iloc[:periods], 
+                        label='Dados de Teste', color='purple', linestyle='--')
+            
+            plt.title(f'Comparação de Modelos de Previsão para {metal}')
+            plt.xlabel('Data')
+            plt.ylabel('Preço (USD/ton)')
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.results_dir, f'model_comparison_{metal}.png'))
+            plt.close()
         
-        # Avaliar modelo
-        train_predict = model.predict(X_train)
-        val_predict = model.predict(X_val)
+        # Preparar resultados
+        results['forecasts'] = forecasts
+        results['metrics'] = metrics
         
-        # Desnormalizar previsões
-        train_predict = scaler.inverse_transform(train_predict)
-        val_predict = scaler.inverse_transform(val_predict)
-        y_train_inv = scaler.inverse_transform(y_train.reshape(-1, 1))
-        y_val_inv = scaler.inverse_transform(y_val.reshape(-1, 1))
+        # Determinar melhor modelo com base no RMSE
+        if metrics:
+            best_model = min(metrics, key=lambda x: metrics[x]['RMSE'])
+            results['best_model'] = best_model
         
-        # Métricas de avaliação
-        train_rmse = np.sqrt(np.mean((train_predict - y_train_inv) ** 2))
-        val_rmse = np.sqrt(np.mean((val_predict - y_val_inv) ** 2))
-        
-        print(f"RMSE Treino: {train_rmse:.2f}")
-        print(f"RMSE Validação: {val_rmse:.2f}")
-        
-        return {
-            'model': model,
-            'train_rmse': train_rmse,
-            'val_rmse': val_rmse,
-            'history': history.history
-        }
+        return results
