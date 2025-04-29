@@ -1,68 +1,160 @@
-# Viabilidade Econômica da Exploração de Nódulos Polimetálicos no Atlântico
+<h1 align="center"> Viabilidade Econômica da Exploração de Nódulos Polimetálicos no Atlântico 🌊🔷 </h1>
 
-Este repositório contém o código, dados e análises relacionados à pesquisa sobre a viabilidade econômica da exploração de nódulos polimetálicos no Oceano Atlântico, utilizando metodologias de redes complexas e transferência de entropia.
+## Sobre o Projeto
 
-## Visão Geral
+Este projeto analisa a viabilidade econômica da exploração de nódulos polimetálicos no Oceano Atlântico, utilizando metodologias avançadas de redes complexas e transferência de entropia. Os nódulos polimetálicos são concreções rochosas encontradas no fundo oceânico que contêm concentrações valiosas de metais como manganês, níquel, cobre e cobalto, essenciais para tecnologias verdes e baterias.
 
-Os nódulos polimetálicos são depósitos minerais encontrados no fundo do oceano que contêm concentrações valiosas de metais como manganês, níquel, cobre e cobalto. Este projeto visa analisar a viabilidade econômica da exploração desses recursos no Oceano Atlântico, com foco em:
+### Objetivos
 
-1. Modelagem de rotas logísticas ótimas entre depósitos de nódulos, plataformas de extração e portos usando redes complexas
-2. Análise do impacto econômico no preço dos minérios com o aumento da oferta através de modelos ARIMA, VAR e LSTM
-3. Otimização de portfólios de locais de mineração baseada em métricas de risco-retorno
+1. Modelar rotas logísticas ótimas entre depósitos de nódulos, plataformas de extração e portos
+2. Prever flutuações nos preços dos metais relevantes utilizando múltiplos modelos
+3. Otimizar a seleção de locais de mineração com base em métricas de risco-retorno
+4. Analisar a viabilidade econômica global considerando fatores interconectados
 
 ## Metodologia
 
-A metodologia central deste projeto baseia-se na adaptação da Transferência de Entropia com Defasagem (LETE) para o contexto da mineração oceânica. Este método, originalmente aplicado em análises de portfólios financeiros, demonstra maior robustez em condições de alta volatilidade em comparação com métodos tradicionais baseados em correlação.
+A metodologia central deste projeto é a **Transferência de Entropia com Defasagem (LETE)**, adaptada para o contexto da mineração oceânica. Esta técnica quantifica as relações causais entre variáveis complexas e demonstra maior robustez em ambientes de alta volatilidade, comparada aos métodos tradicionais baseados em correlação.
 
-### Principais Componentes:
+### Componentes Principais
 
-- **Construção de Redes Complexas**: Modelagem de relações entre locais de mineração, rotas logísticas e infraestrutura portuária
-- **Análise LETE**: Quantificação da transferência de informação entre variáveis econômicas e geológicas
-- **Modelagem de Preços**: Implementação de modelos ARIMA, VAR e LSTM para prever impactos no mercado de metais
-- **Otimização de Portfólio**: Adaptação de técnicas de otimização de portfólio para seleção de locais de mineração
+- **Análise de Redes Complexas**: Modelagem das relações entre locais de mineração, infraestrutura e variáveis econômicas
+- **Previsão de Preços**: Comparação de modelos ARIMA, VAR e LSTM para projetar preços futuros de metais
+- **Otimização de Portfólio**: Seleção de locais de mineração utilizando LETE vs. abordagem tradicional de Markowitz
+- **Análise Integrada**: Síntese de todos os componentes para avaliação global de viabilidade
+
+### Bases Utilizadas
+
+-
+-
+-
+-
 
 ## Estrutura do Repositório
 
-- `data/`: Conjuntos de dados brutos e processados
-- `sql/`: Scripts SQL para processamento de dados
-- `notebooks/`: Jupyter notebooks com análises exploratórias e visualizações
-- `src/`: Código-fonte Python modularizado
-- `results/`: Resultados, figuras e tabelas
-- `docs/`: Documentação adicional
-- `paper/`: Materiais relacionados à publicação acadêmica
+data/ - Dados brutos e processados
 
-## Status do Projeto
+raw/ - Dados brutos
+processed/ - Dados processados
 
-**Fase atual**: Configuração inicial e coleta de dados
+notebooks/ - Jupyter notebooks para análise
 
-## Status do Projeto
+01_data_exploration.ipynb
+02_network_analysis.ipynb
+03_portfolio_optimization.ipynb
+04_economic_analysis.py
+price_forecasting_comparison.py
+portfolio_optimization.py
+integrated_analysis.py
 
-### Concluído:
-- ✅ Configuração inicial do repositório e ambiente de desenvolvimento
-- ✅ Implementação do módulo LETE para análise de transferência de informação
-- ✅ Scripts para coleta de dados simulados
-- ✅ Implementação da otimização de portfólio baseada em LETE
-- ✅ Notebooks de demonstração para análise de redes complexas e otimização
+results/ - Resultados das análises
 
-### Em andamento:
-- 🔄 Coleta de dados reais sobre nódulos polimetálicos no Atlântico
-- 🔄 Análise de impactos de preço usando modelos ARIMA, VAR e LSTM
+figures/ - Gráficos e visualizações
+tables/ - Tabelas de resultados
 
-### Próximas etapas:
-- ⏭️ Integração de dados geoespaciais para otimização de rotas logísticas
-- ⏭️ Implementação de análise de sensibilidade mais abrangente
-- ⏭️ Modelagem de impactos ambientais e regulatórios
+sql/ - Scripts SQL para processamento de dados
 
-## Primeiros Resultados
+schema.sql
 
-Os testes iniciais usando dados simulados demonstraram que:
+src/ - Código-fonte modular
 
-1. A metodologia LETE permite identificar de forma robusta relações causais entre variáveis econômicas e geológicas, mesmo em condições de alta volatilidade
-2. A otimização de portfólio baseada em LETE oferece uma alternativa mais robusta à abordagem tradicional de Markowitz para seleção de portfólios
-3. A viabilidade econômica da exploração é significativamente influenciada pelas variações nos preços dos metais, com diferentes locais apresentando sensibilidades distintas
+data/ - Módulos para coleta e processamento de dados
+models/ - Módulos para modelagem
+network/ - Módulos para análise de redes
+optimization/ - Módulos para otimização
 
-Estes resultados preliminares fornecem uma base sólida para aplicação a dados reais e desenvolvimento de um modelo mais completo para avaliação de viabilidade econômica.
+docs/ - Documentação adicional
+paper/ - Material para publicação acadêmica
+requirements.txt - Dependências do projeto
+setup.py - Script de configuração
+README.md - Este arquivo
 
-## Contato
+## Como Usar
 
+### Instalação
+
+1. Clone o repositório:
+ ```bash
+git clone https://github.com/seu-usuario/atlantic-polymetallic-nodules.git
+cd atlantic-polymetallic-nodules
+
+2. Crie um ambiente virtual e instale as dependências:
+ ```bash
+python -m venv venv #talvez seja necessário utilizar o nodules por conta de algumas ferramentas (como por exemplo o tensor flow)
+source venv/bin/activate  # No Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+3. Configure o banco de dados
+ ```bash
+python src/data/setup_database.py all
+```
+
+### Execução
+
+1. Para executar a análise completa:
+ ```bash
+python run_analysis.py
+```
+
+ou execute cada componente individualmente:
+ ```bash
+#Configurar banco de dados
+
+python src/data/setup_database.py
+
+#Gerar dados simulados
+
+python src/data/metal_prices_collector.py
+python src/data/bathymetry_collector.py
+
+#Executar análises
+
+cd notebooks
+python price_forecasting_comparison.py
+python portfolio_optimization.py
+python integrated_analysis.py
+```
+
+### Resultados e Visualizações
+
+Os resultados são armazenados no diretório results/ e incluem:
+- Previsões de preços de metais (ARIMA, VAR, LSTM) ✅
+- Matrizes LETE e visualizações de redes complexas ✅
+- Rotas logísticas ótimas ✅
+- Fronteiras eficientes para otimização de portfólio ✅
+- Análise de sensibilidade e cenários ✅
+- Conclusões integradas sobre viabilidade econômica ✅
+
+Algumas visualizações de exemplo:
+- Matriz LETE para transferência de informação entre variáveis
+- Rede complexa de locais de mineração, plataformas e portos
+- Fronteira eficiente para alocação de recursos
+- Previsão de preços para metais críticos
+
+## Em andamento:
+- Integração com os dados reais 🔄
+- Correção de alguns problemas nos scripts 🔄
+- Otimização dos scripts 🔄
+
+## Resultados Principais 
+
+Os resultados preliminares com os dados mostram:
+- 
+- 
+- 
+- 
+
+## Próximos Passos:
+
+- Integração com dados reais de exploração ⏭️
+- Refinamento dos modelos de preço utilizando séries temporais mais longas ⏭️
+- Inclusão de fatores ambientais e regulatórios na análise ⏭️
+- Desenvolvimento de modelo de simulação para diferentes cenários de extração ⏭️
+
+_
+
+Licença
+Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.
+
+Contato:
 Guilherme França - franca.guilherme@outlook.pt
